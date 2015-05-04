@@ -19,11 +19,19 @@ import java.text.DecimalFormat;
 import java.math.BigDecimal;
 
 public class CalculateMeans {
+    private final BigDecimal negOne = new BigDecimal(-1);
+    private static BigDecimal[] x_values;
+    private static BigDecimal[] y_values;
+    private static BigDecimal xMean;
+    private static BigDecimal xSqrdMean;
+    private static BigDecimal yMean;
+    private static BigDecimal xyMean;
+    private static BigDecimal slope;
+    private static BigDecimal yIntercept;
 
     public static void main(String [] args) throws IOException {
-        BigDecimal[] y_values = new BigDecimal[100];
-        BigDecimal[] x_values = new BigDecimal[100];
-        DecimalFormat df = new DecimalFormat("#.00");
+        y_values = new BigDecimal[100];
+        x_values = new BigDecimal[100];
         int counter = 0;
         Scanner s = null;
 
@@ -32,35 +40,87 @@ public class CalculateMeans {
             //data is separated by commas
             s.useDelimiter(",\\s*");
             
-          while(s.hasNext()) {
+            DecimalFormat df = new DecimalFormat("#.00");
+            while(s.hasNext()) {
                 x_values[counter] = new BigDecimal(s.next());
                 y_values[counter] = new BigDecimal(s.next());
 
-                System.out.print(" x: " + df.format(x_values[counter].doubleValue()) + 
-                                 " y: " + df.format(y_values[counter].doubleValue()));
+//                System.out.print(" x: " + df.format(x_values[counter].doubleValue()) + 
+//                                 " y: " + df.format(y_values[counter].doubleValue()));
                 counter +=1;
-                System.out.println();
             }
         } finally {
             if(s !=null) {
                 s.close();
             }
         }
+        
+        if(x_values.length != 0) {
+            xMean = calculate_mean(x_values, false);
+            yMean = calculate_mean(y_values, false);
+            xSqrdMean = calculate_mean(x_values, true);
+            calculate_xy_mean();
+            calc_slope();
+            calc_yIntercept();
+
+            System.out.println("Your xMean is: " + xMean);
+            System.out.println("Your xSqrdMean is: " + xSqrdMean);
+            System.out.println("Your yMean is: " + yMean);
+            System.out.println("Your xyMean is: " + xyMean);
+            System.out.println("Your slope is: " + slope);
+            System.out.println("Your y-intercept is: " + yIntercept);
+            System.out.println("Your best fit line equation is: y = " + slope.setScale(3, BigDecimal.ROUND_CEILING) + "x " + 
+                               ((((yIntercept).compareTo(BigDecimal.ZERO)) == -1) ? " - " : " + " ) + 
+                               yIntercept.setScale(3, BigDecimal.ROUND_CEILING));
+        }
     }
 
-    public static double calculate_x_mean(double[] x_values){
-        return 0.0;   
-    }
+    public static BigDecimal calculate_mean(BigDecimal[] axisValues, boolean isSquaredMean){
+        BigDecimal sum = BigDecimal.ZERO;
+        BigDecimal size = new BigDecimal(axisValues.length);
 
-    public static double calculate_y_mean(double[] y_values){
-        return 0.0;
+        if(isSquaredMean){
+            for(BigDecimal value : axisValues){
+                sum = sum.add(value.multiply(value));
+            }
+        } else {
+            for(BigDecimal value : axisValues){
+                sum = sum.add(value);
+            }
+        }
+        return sum.divide(size, 4, BigDecimal.ROUND_CEILING);
     }
     
-    public static double calculate_xy_mean(double[] y_values){
-        return 0.0;
+    public static void calculate_xy_mean(){
+        BigDecimal sum = BigDecimal.ZERO;
+        BigDecimal size = new BigDecimal(x_values.length);
+        
+        for(int i = 0; i < x_values.length; i++){
+            sum = sum.add(x_values[i].multiply(y_values[i]));
+        }
+ 
+        xyMean = sum.divide(size, 4, BigDecimal.ROUND_CEILING);
+    }
+    
+    public static void calc_slope(){
+        //        x_ y_ - xy_
+        //  m = ---------------
+        //      (x_)^2 - (x^2)_
+ 
+        BigDecimal numerator = (xMean.multiply(yMean)).subtract(xyMean);
+        slope = numerator;
+        BigDecimal denominator = (xMean.multiply(xMean)).subtract(xSqrdMean);
+        
+        if( denominator.compareTo(BigDecimal.ZERO) != 0 ) {
+            slope = slope.divide(denominator, 4,BigDecimal.ROUND_CEILING);
+        } else {
+            System.out.println("Something went wrong. Denominator is zero. Slope is set to 0");
+            slope = BigDecimal.ZERO;
+        }
     }
 
-    public static double find_slope(double xyMean, double xMean, double yMean){
-        return 0.0;
+    public static void calc_yIntercept(){
+        //b = y_ - mx_
+        yIntercept = yMean.subtract(slope.multiply(xMean));
     }
 }
